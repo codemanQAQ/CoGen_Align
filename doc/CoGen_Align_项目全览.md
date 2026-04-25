@@ -38,10 +38,12 @@
 - 只更新 Projector，Whisper 和 LLM 全部冻结
 
 **Stage 2：Generative Alignment**
-- 输入：同一批 `<audio, text>` 配对数据
+- 输入：与 Stage 1 **不重叠**的另一半 `<audio, text>` 配对数据
 - 损失：Cross-entropy on text tokens（ASR 任务）
 - 更新：Projector（继续训练）+ LLM LoRA (rank=64)
 - Projector 从 Stage 1 checkpoint 初始化
+
+> **数据切分原则（方案 B）**：总预算 X 小时，Stage 1 用 α·X，Stage 2 用 (1-α)·X，默认 α=0.5。Baseline 使用全部 X 小时做生成式对齐。两组实验总数据量相同，对比公平。
 
 **Optional Stage 2+：Joint Regularization**
 - L_total = L_gen + λ · L_contrast，λ ∈ {0, 0.1, 0.3, 0.5}
@@ -58,28 +60,45 @@
 
 ### 3.1 主实验（Table 1）
 
-| ID | 方法 | Warmup | Gen 数据 |
-|----|------|--------|---------|
-| Baseline-10h | Vanilla Gen（无 warmup） | 0 | 10h |
-| Baseline-50h | Vanilla Gen | 0 | 50h |
-| Baseline-100h | Vanilla Gen | 0 | 100h |
-| Baseline-500h | Vanilla Gen | 0 | 500h |
-| CoGen-10h | CoGen-Align | 20k steps | 10h |
-| CoGen-50h | CoGen-Align | 20k steps | 50h |
-| CoGen-100h | CoGen-Align | 20k steps | 100h |
-| CoGen-500h | CoGen-Align | 20k steps | 500h |
-| Contrastive-only | 纯对比学习 | 50k steps | 0 |
+> **数据预算说明（方案 B2）**：实验编号中的数据量指**总预算 X 小时**，Baseline 和 CoGen 总预算严格相同。Baseline 将全部 X 小时用于生成式对齐；CoGen-Align 默认将 X 小时对半切分（α=0.5），一半做 Stage 1 warmup，一半做 Stage 2 生成式。两组总数据量相同，对比公平。
+>
+> **核心 claim**：CoGen 用一半的生成式数据（X/2），通过 warmup 达到 Baseline 用全量生成式数据（X）的同等甚至更好的效果。
+
+| ID | 方法 | 总预算 | Stage 1 warmup | Stage 2 生成式 |
+|----|------|--------|---------------|--------------|
+| Baseline-10h | Vanilla Gen | 10h | 0h | **10h** |
+| Baseline-50h | Vanilla Gen | 50h | 0h | **50h** |
+| Baseline-100h | Vanilla Gen | 100h | 0h | **100h** |
+| Baseline-500h | Vanilla Gen | 500h | 0h | **500h** |
+| CoGen-10h | CoGen-Align (α=0.5) | 10h | 5h | **5h** |
+| CoGen-50h | CoGen-Align (α=0.5) | 50h | 25h | **25h** |
+| CoGen-100h | CoGen-Align (α=0.5) | 100h | 50h | **50h** |
+| CoGen-500h | CoGen-Align (α=0.5) | 500h | 250h | **250h** |
+| Contrastive-only | 纯对比学习 | 100h | 100h | 0h |
+
+**对比逻辑示意**：
+```
+Baseline-100h:  [────────── 生成式 100h ──────────]  → WER_B
+CoGen-100h:     [── warmup 50h ──][── 生成式 50h ──]  → WER_C
+
+若 WER_C ≤ WER_B，说明 warmup 用 50h 替代了 50h 生成式数据的作用
+数据节省 = (100h - 50h) / 100h = 50%（在此总预算下）
+```
 
 ### 3.2 核心消融（Table 2）
 
-| ID | 变量 | 固定条件 |
-|----|------|---------|
-| A.1 | Warmup steps: {0, 5k, 10k, 20k, 50k, 100k} | Gen=100h |
-| A.2 | λ (joint contrast): {0, 0.1, 0.3, 0.5} | Warmup=20k, Gen=100h |
-| A.3 | Warmup 数据量: {10h, 100h, 1000h} | Gen=100h |
-| A.4 | Hard negative: {in-batch, BM25, semantic} | 其他固定 |
-| A.5 | Projector: {MLP, Q-Former, Subsampling} | Warmup=20k, Gen=100h |
-| A.6 | LLM: {Qwen2.5-1B, 3B, 7B} | Warmup=20k, Gen=100h |
+> **消融实验数据预算说明**：所有消融固定总预算 100h，Stage 1 和 Stage 2 的数据不重叠。默认 α=0.5（各 50h），A.3 专门扫 α。
+
+| ID | 变量 | 取值 | 总预算 | Stage 1 warmup | Stage 2 生成式 |
+|----|------|------|--------|---------------|--------------|
+| A.1 | Warmup steps | {0, 5k, 10k, 20k, 50k, 100k} | 100h | 50h | 50h |
+| A.2 | λ (joint contrast) | {0, 0.1, 0.3, 0.5} | 100h | 50h | 50h |
+| A.3 | 切分比例 α | {0.2, 0.5, 0.8} | 100h | {20h, 50h, 80h} | {80h, 50h, 20h} |
+| A.4 | Hard negative | {in-batch, BM25, semantic} | 100h | 50h | 50h |
+| A.5 | Projector 架构 | {MLP, Q-Former, Subsampling} | 100h | 50h | 50h |
+| A.6 | LLM 尺寸 | {Qwen2.5-1B, 3B, 7B} | 100h | 50h | 50h |
+
+**A.3 的意义**：找到最优切分比例 α，即"用多少比例的数据做 warmup 收益最大"。若 α=0.2 时效果已经很好，说明少量 warmup 数据即可；若 α=0.8 最好，说明 warmup 需要充分训练。这个结论同时指导主实验的 α 选择是否合理。
 
 ### 3.3 机制分析（Table 3）
 
@@ -97,6 +116,53 @@
 - **语音问答**：VoiceBench、AIR-Bench 子集
 - **指令遵循**：URO-Bench（win rate vs GPT-4）
 - **收敛速度**：达到目标 WER 所需训练步数
+
+### 3.5 核心指标"减少 X% 数据需求"的计算方法
+
+**核心思路**：找到 Baseline 和 CoGen 达到同一目标 WER 分别需要多少总预算，计算差值比例。
+
+**Step 1**：选定若干目标 WER 锚点（如 20%、15%、10%、8%）
+
+**Step 2**：对离散实验点做插值（x 轴用 log scale）
+
+```python
+import numpy as np
+from scipy.interpolate import interp1d
+
+data_points  = [10, 50, 100, 500]      # 总预算（小时）
+baseline_wer = [24.1, 11.8, 8.2, 5.1]
+cogen_wer    = [15.3,  7.9, 6.5, 4.7]
+
+# WER 单调递减，插值前需反转
+f_baseline = interp1d(baseline_wer[::-1], data_points[::-1], kind='linear')
+f_cogen    = interp1d(cogen_wer[::-1],    data_points[::-1], kind='linear')
+
+target_wer = 8.2
+h_baseline = f_baseline(target_wer)   # = 100h
+h_cogen    = f_cogen(target_wer)      # ≈ 45h（插值估计）
+
+saving = (h_baseline - h_cogen) / h_baseline * 100
+print(f"目标 WER={target_wer}%，数据节省 {saving:.1f}%")
+```
+
+**Step 3**：在多个 WER 锚点上重复计算，取平均或报告范围（如 40-60%）
+
+**论文可视化（Killer Chart 横向箭头）**：
+```
+WER
+ |
+8%|----●(Baseline@100h)
+ |    ←50h→
+ |----●(CoGen@50h)
+ |________________________
+      50h  100h  500h   数据量（log scale）
+```
+箭头长度 = 节省的数据量，标注"2× data efficiency"或"50% reduction"。
+
+**注意事项**：
+- 插值精度依赖实验点密度，若 10h-50h 区间差距过大，可补充 25h 实验点
+- 不同 WER 锚点的节省比例可能不同（小数据区间通常节省更多），报告范围比单一数字更诚实
+- 每组实验至少跑 3 个随机 seed，报告均值 ± 标准差
 
 ### 3.5 论文占位结果（待实验替换）
 
@@ -157,10 +223,10 @@ Wall-clock 约 **3-4 周**专注实验时间。
 
 ### 4.4 Sanity Check 标准（Week 2 末）
 
-用 50h warmup + 50h gen + 5h val：
+总预算 100h，按方案 B 切分：Stage 1 用 50h，Stage 2 用 50h，Baseline 用全部 100h，验证集 5h（独立不计入预算）：
 1. Stage 1 训 5000 步，top1 retrieval 准确率涨到 30%+
-2. Stage 2 Baseline 训 2000 步，WER < 30%
-3. Stage 2 CoGen 训 2000 步，WER < 25%（必须比 Baseline 好）
+2. Stage 2 Baseline（100h 生成式）训 2000 步，WER < 30%
+3. Stage 2 CoGen（50h warmup + 50h 生成式）训 2000 步，WER < 25%（必须比 Baseline 好）
 
 **若 Step 3 未通过，停下 debug，不要继续放大规模。**
 
@@ -197,7 +263,7 @@ Wall-clock 约 **3-4 周**专注实验时间。
 | 架构 | HuBERT + Q-Former + Llama-3.1 | Whisper + MLP + Qwen2.5（主流学术搭配） |
 | Stage 1 loss 施加位置 | LLM 内部多层（7个检查点求和） | projector 输出端（LLM 输入边界） |
 | Stage 2 LLM | 全程冻结，无 LoRA | **LoRA 微调**（关键差异） |
-| 数据规模实验点 | 仅 10% vs 100% 两个点 | 5 个绝对小时量级点（10h–1000h） |
+| 数据规模实验点 | 仅 10% vs 100% 两个点 | 5 个绝对小时量级点（10h–1000h），总预算对等比较 |
 | 极低资源场景 | 预训练用了 400h+，未测 <100h | 10h 是核心实验点 |
 | 机制分析 | 无 | 表征几何 + loss landscape |
 
@@ -245,7 +311,7 @@ Wall-clock 约 **3-4 周**专注实验时间。
 | Warmup 效果不明显（<20% 提升） | 降低数据量到 1h/5h 极端场景；即使效果一般，机制分析仍可发 findings |
 | 不同架构结论不一致 | 聚焦 MLP + Qwen2.5-7B，其他作为 limitation |
 | Stage 2 OOM | batch_size=2，gradient_accumulation=8，开启 gradient checkpointing |
-| CoGen 没比 Baseline 好 | 检查数据泄露；尝试 warmup steps ∈ {10k, 30k, 50k}；尝试 λ=0.3 joint reg |
+| CoGen 没比 Baseline 好 | 检查 Stage 1/2 数据是否重叠（数据泄露）；尝试 warmup steps ∈ {10k, 30k, 50k}；尝试 λ=0.3 joint reg |
 
 ---
 

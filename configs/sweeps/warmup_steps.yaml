@@ -1,0 +1,12 @@
+# Example wandb sweep — wire program path after scripts are finalized.
+# wandb sweep configs/sweeps/warmup_steps.yaml
+program: scripts/train_stage2.py
+method: grid
+parameters:
+  training.warmup_init_path:
+    values:
+      - outputs/stage1_default/ckpt_5000.pt
+      - outputs/stage1_default/ckpt_10000.pt
+      - outputs/stage1_default/ckpt_20000.pt
+      - outputs/stage1_default/ckpt_50000.pt
+      - null

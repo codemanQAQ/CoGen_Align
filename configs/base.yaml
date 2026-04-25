@@ -1,0 +1,33 @@
+project:
+  name: cogen-align
+  seed: 42
+
+data:
+  audio_root: /data/librispeech
+  feature_root: /data/speech/tts/intern/mqb/personal/cogen-align/data/features
+  sample_rate: 16000
+  max_duration: 30.0
+  min_duration: 1.0
+  whisper_model: openai/whisper-large-v3
+
+model:
+  llm_name: Qwen/Qwen2.5-7B-Instruct
+  llm_hidden_size: 3584
+  whisper_feature_dim: 1280
+  projector:
+    type: mlp
+    hidden_dim: 4096
+    output_dim: 3584
+    subsample: 5
+    use_attention_pooling: true
+
+training:
+  bf16: true
+  gradient_clip: 1.0
+  log_every: 50
+  save_every: 5000
+  eval_every: 2000
+
+wandb:
+  project: cogen-align
+  entity: null

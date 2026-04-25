@@ -1,0 +1,15 @@
+# Core (matches pyproject.toml)
+torch>=2.1
+transformers>=4.40
+peft>=0.11
+pyyaml>=6.0
+numpy>=1.24
+safetensors>=0.4
+
+# Training / eval
+wandb>=0.16
+jiwer>=3.0
+
+# Optional analysis
+matplotlib>=3.8
+scikit-learn>=1.3

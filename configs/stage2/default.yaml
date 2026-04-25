@@ -1,0 +1,8 @@
+# 本地 smoke / 默认 Stage2：小数据、短步数；正式实验请用 baseline_*.yaml / cogen_*.yaml
+inherit: configs/stage2/baseline_10h.yaml
+
+run_name: s2_default
+output_dir: outputs/stage2_default
+
+training:
+  max_steps: 200

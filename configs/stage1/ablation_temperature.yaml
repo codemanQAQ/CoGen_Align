@@ -1,0 +1,7 @@
+inherit: configs/stage1/default.yaml
+
+run_name: s1_ablation_temperature
+experiment_type: ablation
+
+training:
+  temperature: 0.1

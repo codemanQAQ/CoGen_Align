@@ -1,0 +1,21 @@
+inherit: configs/base.yaml
+
+run_name: s1_default_t007
+experiment_type: main
+output_dir: outputs/stage1_default
+
+data:
+  train_manifest: data/manifests/warmup_600h.jsonl
+  val_manifest: data/manifests/test_clean.jsonl
+
+training:
+  batch_size_per_gpu: 64
+  lr: 1.0e-4
+  temperature: 0.07
+  gradient_clip: 1.0
+  max_steps: 50000
+  save_every: 5000
+  eval_every: 2000
+  log_every: 50
+  use_hard_neg: false
+  hard_negative_start: 10000

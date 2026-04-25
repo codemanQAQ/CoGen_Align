@@ -1,0 +1,8 @@
+inherit: configs/stage2/cogen_10h.yaml
+
+run_name: s2_cogen_500h_w20k
+data_size: 500h
+output_dir: outputs/stage2_cogen_500h
+
+data:
+  train_manifest: data/manifests/gen_500h.jsonl

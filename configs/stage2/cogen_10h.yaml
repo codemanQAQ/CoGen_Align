@@ -1,0 +1,9 @@
+inherit: configs/stage2/baseline_10h.yaml
+
+run_name: s2_cogen_10h_w20k
+condition: cogen
+data_size: 10h
+output_dir: outputs/stage2_cogen_10h
+
+training:
+  warmup_init_path: outputs/stage1_default/ckpt_20000.pt

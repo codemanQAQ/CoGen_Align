@@ -1,0 +1,24 @@
+inherit: configs/base.yaml
+
+run_name: s2_baseline_10h
+condition: baseline
+data_size: 10h
+output_dir: outputs/stage2_baseline_10h
+
+data:
+  train_manifest: data/manifests/gen_10h.jsonl
+  val_manifest: data/manifests/test_clean.jsonl
+
+training:
+  warmup_init_path: null
+  batch_size_per_gpu: 4
+  gradient_accumulation: 4
+  lr_projector: 5.0e-5
+  lr_lora: 1.0e-4
+  lora_rank: 64
+  lora_alpha: 128
+  gradient_clip: 1.0
+  max_steps: 5000
+  eval_every: 500
+  save_every: 1000
+  log_every: 50

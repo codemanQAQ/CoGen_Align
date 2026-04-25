@@ -1,0 +1,8 @@
+inherit: configs/stage1/default.yaml
+
+run_name: s1_ablation_hardneg
+experiment_type: ablation
+
+training:
+  use_hard_neg: true
+  hard_negative_start: 10000
