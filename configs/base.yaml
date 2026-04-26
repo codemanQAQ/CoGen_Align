@@ -3,12 +3,12 @@ project:
   seed: 42
 
 data:
-  audio_root: /data/librispeech
+  audio_root: /data/speech/tts/intern/mqb/wavs/LibriSpeech
   feature_root: /data/speech/tts/intern/mqb/personal/cogen-align/data/features
   sample_rate: 16000
   max_duration: 30.0
   min_duration: 1.0
-  whisper_model: openai/whisper-large-v3
+  whisper_model: /mnt/tos/tts/intern/liudaxing/pretrain/whisper-large-v3
 
 model:
   llm_name: Qwen/Qwen2.5-7B-Instruct
