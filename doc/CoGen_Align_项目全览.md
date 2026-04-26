@@ -62,17 +62,23 @@
 
 > **数据预算说明（方案 B2）**：实验编号中的数据量指**总预算 X 小时**，Baseline 和 CoGen 总预算严格相同。Baseline 将全部 X 小时用于生成式对齐；CoGen-Align 默认将 X 小时对半切分（α=0.5），一半做 Stage 1 warmup，一半做 Stage 2 生成式。两组总数据量相同，对比公平。
 >
-> **核心 claim**：CoGen 用一半的生成式数据（X/2），通过 warmup 达到 Baseline 用全量生成式数据（X）的同等甚至更好的效果。
+> **起点说明**：最小总预算从 50h 开始。10h 总预算下切分后每部分只有 5h，生成式数据量过少导致结果不稳定，不适合作为实验点。极低资源（<50h）场景在 Limitation 中说明。
+>
+> **核心 claim**：相同总预算下，CoGen 通过 warmup 将一半数据的生成式训练效果提升至接近或超过 Baseline 全量生成式训练的效果。
 
 | ID | 方法 | 总预算 | Stage 1 warmup | Stage 2 生成式 |
 |----|------|--------|---------------|--------------|
-| Baseline-10h | Vanilla Gen | 10h | 0h | **10h** |
 | Baseline-50h | Vanilla Gen | 50h | 0h | **50h** |
 | Baseline-100h | Vanilla Gen | 100h | 0h | **100h** |
+| Baseline-200h | Vanilla Gen | 200h | 0h | **200h** |
+| Baseline-300h | Vanilla Gen | 300h | 0h | **300h** |
+| Baseline-400h | Vanilla Gen | 400h | 0h | **400h** |
 | Baseline-500h | Vanilla Gen | 500h | 0h | **500h** |
-| CoGen-10h | CoGen-Align (α=0.5) | 10h | 5h | **5h** |
 | CoGen-50h | CoGen-Align (α=0.5) | 50h | 25h | **25h** |
 | CoGen-100h | CoGen-Align (α=0.5) | 100h | 50h | **50h** |
+| CoGen-200h | CoGen-Align (α=0.5) | 200h | 100h | **100h** |
+| CoGen-300h | CoGen-Align (α=0.5) | 300h | 150h | **150h** |
+| CoGen-400h | CoGen-Align (α=0.5) | 400h | 200h | **200h** |
 | CoGen-500h | CoGen-Align (α=0.5) | 500h | 250h | **250h** |
 | Contrastive-only | 纯对比学习 | 100h | 100h | 0h |
 
@@ -81,8 +87,7 @@
 Baseline-100h:  [────────── 生成式 100h ──────────]  → WER_B
 CoGen-100h:     [── warmup 50h ──][── 生成式 50h ──]  → WER_C
 
-若 WER_C ≤ WER_B，说明 warmup 用 50h 替代了 50h 生成式数据的作用
-数据节省 = (100h - 50h) / 100h = 50%（在此总预算下）
+若 WER_C ≤ WER_B，说明 warmup 令 50h 生成式达到了 100h 的效果
 ```
 
 ### 3.2 核心消融（Table 2）
@@ -164,14 +169,16 @@ WER
 - 不同 WER 锚点的节省比例可能不同（小数据区间通常节省更多），报告范围比单一数字更诚实
 - 每组实验至少跑 3 个随机 seed，报告均值 ± 标准差
 
-### 3.5 论文占位结果（待实验替换）
+### 3.6 论文占位结果（待实验替换）
 
-| Data | Baseline WER-clean | CoGen WER-clean | Baseline WER-other | CoGen WER-other |
-|------|-------------------|-----------------|-------------------|-----------------|
-| 10h | 24.1 | 15.3 | 38.2 | 28.4 |
-| 50h | 11.8 | 7.9 | 22.1 | 16.5 |
-| 100h | 8.2 | 6.5 | 16.8 | 13.9 |
-| 500h | 5.1 | 4.7 | 11.4 | 10.8 |
+| 总预算 | Baseline WER-clean | CoGen WER-clean | Baseline WER-other | CoGen WER-other |
+|--------|-------------------|-----------------|-------------------|-----------------|
+| 50h | — | — | — | — |
+| 100h | — | — | — | — |
+| 200h | — | — | — | — |
+| 300h | — | — | — | — |
+| 400h | — | — | — | — |
+| 500h | — | — | — | — |
 
 ---
 

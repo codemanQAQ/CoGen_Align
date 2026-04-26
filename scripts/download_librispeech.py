@@ -134,11 +134,20 @@ def download_one_split(
     local_dir_name = SPLIT_MAP[key]
     local_dir = output_root / "LibriSpeech" / local_dir_name
     
-    # 已经有就跳过
+    # 已经有就跳过（但如果缺 trans.txt，则允许“修复模式”补写转写文件）
     if local_dir.exists() and any(local_dir.rglob("*.flac")):
-        existing = len(list(local_dir.rglob("*.flac")))
-        print(f"  [Skip] {local_dir_name} already has {existing} flac files")
-        return
+        existing_flac = len(list(local_dir.rglob("*.flac")))
+        existing_trans = len(list(local_dir.rglob("*.trans.txt")))
+        if existing_trans > 0:
+            print(
+                f"  [Skip] {local_dir_name} already has {existing_flac} flac files "
+                f"and {existing_trans} trans.txt files"
+            )
+            return
+        print(
+            f"  [Repair] {local_dir_name} has {existing_flac} flac files but 0 trans.txt; "
+            "will regenerate transcripts (audio will not be re-written)."
+        )
     
     local_dir.mkdir(parents=True, exist_ok=True)
     
