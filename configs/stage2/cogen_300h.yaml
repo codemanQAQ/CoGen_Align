@@ -1,0 +1,12 @@
+inherit: configs/stage2/common.yaml
+
+run_name: s2_cogen_300h
+condition: cogen
+data_size: 300h
+output_dir: outputs/stage2/cogen_300h
+
+data:
+  train_manifest: data/manifests/train/train_300h.jsonl
+
+training:
+  warmup_init_path: outputs/stage1/table1_300h_e1/ckpt_last.pt

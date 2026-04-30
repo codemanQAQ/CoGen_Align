@@ -1,0 +1,8 @@
+# Table 1 主实验 — Stage1 @400h
+inherit: configs/stage1/default.yaml
+
+run_name: s1_t1_400h_e1
+output_dir: outputs/stage1/table1_400h_e1
+
+data:
+  train_manifest: data/manifests/train/train_400h.jsonl

@@ -1,8 +1,13 @@
-inherit: configs/stage2/cogen_10h.yaml
+inherit: configs/stage2/common.yaml
 
-run_name: s2_cogen_100h_w20k
+run_name: s2_cogen_100h
+condition: cogen
 data_size: 100h
-output_dir: outputs/stage2_cogen_100h
+output_dir: outputs/stage2/cogen_100h
 
 data:
-  train_manifest: data/manifests/gen_100h.jsonl
+  train_manifest: data/manifests/train/train_100h.jsonl
+
+training:
+  # 与 Stage1 configs/stage1/default.yaml 的 output_dir 一致
+  warmup_init_path: outputs/stage1/main_100h_e1/ckpt_last.pt

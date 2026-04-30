@@ -2,6 +2,9 @@
 """
 全量扫描 audio_root 下所有 .flac/.wav，按目录树写入 feature_root 下的 .npy（不读 manifest）。
 
+Encoder 输出后按 **实际读入波形时长**（已受 ``max_duration`` 样本上限截断）换算帧数并 **ceil 截断**，
+去掉 Whisper 补满窗产生的尾部帧，落盘为变长 ``[T, D]``。
+
 第二步请用 attach_feature_paths.py 给 manifest 插入 feature_path。
 """
 
@@ -21,6 +24,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT / "src"))
 
+from cogen_align.data.effective_frames import effective_audio_frames_from_duration  # noqa: E402
 from cogen_align.data.feature_paths import audio_path_to_feature_path  # noqa: E402
 from cogen_align.utils.config import load_config  # noqa: E402
 
@@ -146,6 +150,7 @@ def main() -> None:
     映射在 ``feature_root`` 下写出对应 ``.npy``；已存在文件默认跳过，``--force`` 时覆盖。
 
     不读取 manifest；生成清单后请用 ``attach_feature_paths.py`` 写入 ``feature_path``。
+    训练侧 ``SpeechTextDataset`` 不再按 ``duration`` 截特征，请确保本脚本已用同一 ``max_duration`` 重算特征。
     """
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--config", type=str, default=str(_REPO_ROOT / "configs/base.yaml"))
@@ -216,6 +221,15 @@ def main() -> None:
             dtype=dtype,
             max_samples=None,
         )
+        actual_sec = float(wav.shape[0]) / float(sr)
+        t_enc = int(feats.shape[0])
+        take = effective_audio_frames_from_duration(
+            actual_sec,
+            t_enc,
+            max_duration=max_duration,
+            max_audio_frames=t_enc,
+        )
+        feats = feats[:take]
         np.save(str(feat), feats)
         done += 1
 

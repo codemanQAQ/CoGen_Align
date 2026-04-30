@@ -1,8 +1,12 @@
-inherit: configs/stage2/cogen_10h.yaml
+inherit: configs/stage2/common.yaml
 
-run_name: s2_cogen_50h_w20k
+run_name: s2_cogen_50h
+condition: cogen
 data_size: 50h
-output_dir: outputs/stage2_cogen_50h
+output_dir: outputs/stage2/cogen_50h
 
 data:
-  train_manifest: data/manifests/gen_50h.jsonl
+  train_manifest: data/manifests/train/train_50h.jsonl
+
+training:
+  warmup_init_path: outputs/stage1/table1_50h_e1/ckpt_last.pt

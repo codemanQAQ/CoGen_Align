@@ -266,3 +266,30 @@ Check 3 未过 → 停止，排查根本原因，不跑主实验
 - [x] 与 Züfle (arXiv:2412.15712) 的区分写法
 - [x] 论文结构
 - [ ] 时间规划更新
+
+---
+
+## 十四、Stage 1 训练配置（代码实现）
+
+与本文二、三、五、七、九节对齐的 YAML 位于 `configs/stage1/`：
+
+| 文件 | 用途 |
+|------|------|
+| `default.yaml` | 默认主配置：`train_100h` + `dev_clean`，`max_epochs: 1`，对称 InfoNCE |
+| `table1_s1_{50,200,300,400,500}h.yaml` | 四节 Table 1 各数据量 Stage1（100h 与 `default.yaml` 相同，不单独建文件） |
+| `table1_s1_50h.yaml` | 九节前置实验 Warmup（50h + dev-clean）与 Table1@50h 共用 |
+| `ablation_a1_epoch{2,3}.yaml` | 五节 A.1 epoch 消融（在 `default` 的 manifest 上改 `max_epochs`） |
+| `ablation_temperature.yaml` / `ablation_hardneg.yaml` | 温度、硬负例等扩展消融 |
+
+训练脚本：`scripts/train_stage1.py`（`torchrun --nproc_per_node=N` 多卡 DDP）；优先读取 `training.max_epochs`，未设置时用 `max_steps`。Stage1 结束会额外写入 `ckpt_last.pt`，供 Stage2 `warmup_init_path` 固定引用。`output_dir` 下自动写 `experiment_record.yaml` / `experiment_config.yaml` / `experiment_record.jsonl` 记录命令行、合并配置、Git 与分布式环境；另写 **`metrics.jsonl`**（`split`: `meta` / `train` / `val`）持久化 loss、top1、grad_norm、lr 及验证检索指标，**与是否使用 W&B 无关**，便于后期用 pandas/matplotlib 定制图。
+
+**Stage 2（`configs/stage2/`）**
+
+| 文件 | 用途 |
+|------|------|
+| `common.yaml` | Baseline / CoGen 共用：LoRA、优化超参、`val_manifest=dev_clean` |
+| `baseline_{50,100,200,300,400,500}h.yaml` | 四节 Table1 纯生成式；`train_manifest=data/manifests/train/train_*h.jsonl` |
+| `cogen_{50,…,500}h.yaml` | 同数据量 + `warmup_init_path=outputs/stage1/<对应 Stage1 output_dir>/ckpt_last.pt` |
+| `default.yaml` | 短 `max_steps` smoke，继承 `baseline_50h` |
+
+Stage2 全量训练逻辑仍以 `scripts/train_stage2.py` 工程化为准（当前 scaffold 可用 `--dry-run` 校验合并 YAML）。

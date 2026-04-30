@@ -1,8 +1,12 @@
-inherit: configs/stage2/cogen_10h.yaml
+inherit: configs/stage2/common.yaml
 
-run_name: s2_cogen_500h_w20k
+run_name: s2_cogen_500h
+condition: cogen
 data_size: 500h
-output_dir: outputs/stage2_cogen_500h
+output_dir: outputs/stage2/cogen_500h
 
 data:
-  train_manifest: data/manifests/gen_500h.jsonl
+  train_manifest: data/manifests/train/train_500h.jsonl
+
+training:
+  warmup_init_path: outputs/stage1/table1_500h_e1/ckpt_last.pt

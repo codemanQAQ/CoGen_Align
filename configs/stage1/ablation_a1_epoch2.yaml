@@ -1,0 +1,9 @@
+# 五节 A.1：Stage1 epoch 消融 — 2 epochs（固定 100h 等由 inherit 的 train_manifest 决定）
+inherit: configs/stage1/default.yaml
+
+run_name: s1_a1_100h_e2
+experiment_type: ablation
+output_dir: outputs/stage1/ablation_a1_e2
+
+training:
+  max_epochs: 2

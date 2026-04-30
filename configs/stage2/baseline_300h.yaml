@@ -1,0 +1,9 @@
+inherit: configs/stage2/common.yaml
+
+run_name: s2_baseline_300h
+condition: baseline
+data_size: 300h
+output_dir: outputs/stage2/baseline_300h
+
+data:
+  train_manifest: data/manifests/train/train_300h.jsonl

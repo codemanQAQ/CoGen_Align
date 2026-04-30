@@ -8,6 +8,7 @@ import torch
 
 from cogen_align.data.collator import collate_stage1
 from cogen_align.data.dataset import SpeechTextDataset
+from cogen_align.data.effective_frames import effective_audio_frames_from_duration
 
 
 class _FakeTokenizer:
@@ -95,3 +96,68 @@ def test_collator_hard_negatives(tmp_path: Path):
     batch = collate_stage1([ds[0]])
     assert "hard_neg_text_ids" in batch
     assert batch["hard_neg_text_ids"].shape[0] == 1
+
+
+def test_dataset_uses_pretrimmed_npy_length(tmp_path: Path):
+    """预计算已截断的 .npy：Dataset 整段使用（仅受 max_audio_frames 限制）。"""
+    feat_dir = tmp_path / "feats"
+    feat_dir.mkdir()
+    np.save(feat_dir / "u.npy", np.random.randn(88, 1280).astype(np.float32))
+    manifest = tmp_path / "m.jsonl"
+    manifest.write_text(
+        json.dumps(
+            {
+                "id": "u",
+                "audio_path": "/u.flac",
+                "feature_path": str(feat_dir / "u.npy"),
+                "text": "hi",
+                "duration": 15.0,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    ds = SpeechTextDataset(
+        manifest,
+        _FakeTokenizer(),
+        max_audio_frames=2000,
+    )
+    item = ds[0]
+    assert item["audio_feat"].shape[0] == 88
+    assert item["audio_len"] == 88
+
+
+def test_dataset_caps_max_audio_frames(tmp_path: Path):
+    feat_dir = tmp_path / "feats"
+    feat_dir.mkdir()
+    np.save(feat_dir / "u.npy", np.random.randn(500, 1280).astype(np.float32))
+    manifest = tmp_path / "m.jsonl"
+    manifest.write_text(
+        json.dumps(
+            {
+                "id": "u",
+                "audio_path": "/u.flac",
+                "feature_path": str(feat_dir / "u.npy"),
+                "text": "hi",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    ds = SpeechTextDataset(manifest, _FakeTokenizer(), max_audio_frames=100)
+    item = ds[0]
+    assert item["audio_feat"].shape[0] == 100
+    assert item["audio_len"] == 100
+
+
+def test_effective_frames_helper():
+    assert effective_audio_frames_from_duration(
+        15.0, 1500, max_duration=30.0, max_audio_frames=2000
+    ) == 750
+    # 1/30*100 ≈ 3.33，round 得 3，ceil 得 4（多留一帧）
+    assert effective_audio_frames_from_duration(
+        1.0, 100, max_duration=30.0, max_audio_frames=200
+    ) == 4
+    assert effective_audio_frames_from_duration(
+        None, 100, max_duration=30.0, max_audio_frames=50
+    ) == 50

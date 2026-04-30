@@ -1,0 +1,9 @@
+inherit: configs/stage2/common.yaml
+
+run_name: s2_baseline_400h
+condition: baseline
+data_size: 400h
+output_dir: outputs/stage2/baseline_400h
+
+data:
+  train_manifest: data/manifests/train/train_400h.jsonl

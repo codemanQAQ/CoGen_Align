@@ -1,21 +1,35 @@
+# Stage 1 — Contrastive Warmup
+# 须与 doc/CoGen_Align_实验设计终稿.md 二、三、五、七、九节一致；后续实验请改子配置而非偏离该文档。
 inherit: configs/base.yaml
 
-run_name: s1_default_t007
+run_name: s1_main_100h_e1
 experiment_type: main
-output_dir: outputs/stage1_default
+output_dir: outputs/stage1/main_100h_e1
+
+# 二节：Whisper-large-v3 冻结、2-layer MLP projector hidden=4096 subsample=5、Qwen2.5-7B Stage1 冻结
+# 均在 configs/base.yaml 的 model 段
 
 data:
-  train_manifest: data/manifests/warmup_600h.jsonl
-  val_manifest: data/manifests/test_clean.jsonl
+  # 七节：960h 池子按 utterance 打乱 seed=42 后按时长截取的子集；主实验 Table1 为 50h…500h
+  # 默认 100h；跑前置实验（九节）请换 train_50h.jsonl，或直接用 table1_s1_50h.yaml
+  train_manifest: data/manifests/train/train_100h.jsonl
+  # 七节：训练过程监控用 dev-clean；test-clean/test-other 仅训练结束后一次性评测，勿作此处 val
+  val_manifest: data/manifests/train/dev_clean.jsonl
 
 training:
-  batch_size_per_gpu: 64
-  lr: 1.0e-4
+  # 三节：对称 InfoNCE(z_a,z_t)，in-batch 负例；仅更新 Projector（train_stage1 冻结 LLM 嵌入）
   temperature: 0.07
+  lr: 1.0e-4
+  weight_decay: 0.01
+  batch_size_per_gpu: 64
   gradient_clip: 1.0
-  max_steps: 50000
-  save_every: 5000
-  eval_every: 2000
+  # 五节 A.1：以 epoch 为变量 {0,1,2,3}；主脚本优先 max_epochs，未设置时才用 max_steps
+  max_epochs: 1
+  # max_steps: 50000
   log_every: 50
+  eval_every: 2000
+  save_every: 5000
   use_hard_neg: false
   hard_negative_start: 10000
+
+# 九节 Check1：Stage1 结束后 val 上 audio→text top-1 retrieval 应 >20%（见 train_stage1 evaluate_retrieval）

@@ -13,6 +13,9 @@ class SpeechTextDataset(Dataset):
     Manifest jsonl lines:
     {"id": "...", "audio_path": "...", "feature_path": "...", "text": "...",
      "duration": 1.0, "hard_neg_ids": []}
+
+    ``feature_path`` 的 ``.npy`` 应在 **预计算** 时已按真实波形时长截掉 Whisper padding 尾；
+    本类只按 ``max_audio_frames`` 再做训练侧上限截断；``duration`` 不参与截断。
     """
 
     def __init__(
@@ -44,8 +47,9 @@ class SpeechTextDataset(Dataset):
 
     def __getitem__(self, idx: int) -> dict:
         sample = self.samples[idx]
-        feat = np.load(sample["feature_path"]).astype(np.float32)
-        feat = torch.from_numpy(feat[: self.max_audio_frames])
+        feat_np = np.load(sample["feature_path"]).astype(np.float32)
+        take = min(int(feat_np.shape[0]), self.max_audio_frames)
+        feat = torch.from_numpy(feat_np[:take])
         enc = self.tokenizer(
             sample["text"],
             max_length=self.max_text_tokens,

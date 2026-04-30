@@ -1,8 +1,9 @@
-inherit: configs/stage2/baseline_10h.yaml
+inherit: configs/stage2/common.yaml
 
 run_name: s2_baseline_50h
+condition: baseline
 data_size: 50h
-output_dir: outputs/stage2_baseline_50h
+output_dir: outputs/stage2/baseline_50h
 
 data:
-  train_manifest: data/manifests/gen_50h.jsonl
+  train_manifest: data/manifests/train/train_50h.jsonl

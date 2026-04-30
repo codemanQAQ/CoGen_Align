@@ -11,7 +11,7 @@ data:
   whisper_model: /mnt/tos/tts/intern/liudaxing/pretrain/whisper-large-v3
 
 model:
-  llm_name: Qwen/Qwen2.5-7B-Instruct
+  llm_name: /data/speech/tts/intern/mqb/models/Qwen2.5-7B-Instruct
   llm_hidden_size: 3584
   whisper_feature_dim: 1280
   projector:
@@ -28,6 +28,9 @@ training:
   save_every: 5000
   eval_every: 2000
 
+# Weights & Biases：不设环境变量 WANDB_DISABLED 时，训练标量自动出折线图（Charts）。
+# Linux 服务器：先 `pip install wandb`（见 pyproject [train]），再 `wandb login`。
 wandb:
   project: cogen-align
   entity: null
+  notes: null
