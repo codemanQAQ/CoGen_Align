@@ -1,0 +1,10 @@
+# 五节 A.1：固定 100h，Stage1 恰好 1000 optimizer steps
+inherit: configs/stage1/default.yaml
+
+run_name: s1_a1_100h_s1000
+experiment_type: ablation
+output_dir: outputs/stage1/ablation_a1_100h_s1000
+
+training:
+  stop_mode: fixed_steps
+  max_steps: 1000

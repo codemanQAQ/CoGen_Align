@@ -1,0 +1,10 @@
+# 五节 A.1：固定 100h，Stage1 训练 0 步（随机初始化 projector 直接存 ckpt_last，供 Stage2 对照）
+inherit: configs/stage1/default.yaml
+
+run_name: s1_a1_100h_s0
+experiment_type: ablation
+output_dir: outputs/stage1/ablation_a1_100h_s0
+
+training:
+  stop_mode: fixed_steps
+  max_steps: 0
